@@ -31,17 +31,24 @@ def run_server(host: str, port: int, card_url: str) -> None:
         "name": "purple-comtrade-baseline-v2",
         "description": "Baseline Purple agent for Green Comtrade Bench v2",
         "version": "2.0.0",
-        "protocol": "a2a",
+        "url": "http://purple-comtrade-baseline-v2:9009/.well-known/agent-card.json",
         "endpoints": {
-            "run": "/run",
-            "run_task": "/run",
-            "health": "/health",
+            "rpc": "/a2a/rpc",
+            "health": "/healthz",
         },
-        "capabilities": ["comtrade-bench"],
+        "capabilities": {
+            "streaming": False,
+            "pushNotifications": False,
+        },
         "defaultInputModes": ["application/json"],
         "defaultOutputModes": ["application/json"],
         "skills": [
-            {"name": "run", "description": "Run benchmark tasks via /run"}
+            {
+                "id": "comtrade.bench.run",
+                "name": "run",
+                "description": "Run benchmark tasks via /run",
+                "tags": ["comtrade", "benchmark", "a2a"],
+            }
         ],
     }
 
