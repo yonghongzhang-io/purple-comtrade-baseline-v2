@@ -38,6 +38,11 @@ def run_server(host: str, port: int, card_url: str) -> None:
             "health": "/health",
         },
         "capabilities": ["comtrade-bench"],
+        "defaultInputModes": ["application/json"],
+        "defaultOutputModes": ["application/json"],
+        "skills": [
+            {"name": "run", "description": "Run benchmark tasks via /run"}
+        ],
     }
 
     @app.get("/")
