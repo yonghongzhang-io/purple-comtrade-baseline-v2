@@ -121,11 +121,11 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     
-    # Server mode args
+    # Server mode args (default: start server on 0.0.0.0:9009)
     parser.add_argument(
         "--host",
-        default=None,
-        help="Server host (enables server mode)",
+        default="0.0.0.0",
+        help="Server host (default: 0.0.0.0)",
     )
     parser.add_argument(
         "--port",
@@ -137,6 +137,18 @@ def main() -> int:
         "--card-url",
         default=None,
         help="Agent card base URL for endpoint discovery",
+    )
+    parser.add_argument(
+        "--server",
+        action="store_true",
+        default=True,
+        help="Run in server mode (default: True)",
+    )
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        default=False,
+        help="Run in local task mode",
     )
     
     # Local mode args
@@ -156,21 +168,22 @@ def main() -> int:
         help="Mock service URL (default: http://localhost:8000)",
     )
     
-    args = parser.parse_args()
+    # Parse known args, ignore unknown (for compose compatibility)
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        print(f"Ignoring unknown args: {unknown}")
     
-    # Detect server mode
-    if args.host is not None:
-        # Use env PORT if set, otherwise args.port
-        port = int(os.getenv("PORT", str(args.port)))
-        card_url = args.card_url or f"http://localhost:{port}"
-        run_server(args.host, port, card_url)
-        return 0
+    # Local mode if --local flag is set
+    if args.local:
+        if args.output_dir is None:
+            args.output_dir = f"_purple_output/{args.task_id}"
+        return run_local(args.task_id, args.output_dir, args.mock_url)
     
-    # Local mode
-    if args.output_dir is None:
-        args.output_dir = f"_purple_output/{args.task_id}"
-    
-    return run_local(args.task_id, args.output_dir, args.mock_url)
+    # Server mode (default)
+    port = int(os.getenv("PORT", str(args.port)))
+    card_url = args.card_url or f"http://localhost:{port}"
+    run_server(args.host, port, card_url)
+    return 0
 
 
 if __name__ == "__main__":
