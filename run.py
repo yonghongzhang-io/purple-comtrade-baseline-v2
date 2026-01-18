@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -33,18 +34,27 @@ def run_server(host: str, port: int, card_url: str) -> None:
         "protocol": "a2a",
         "endpoints": {
             "run": f"{card_url}/run",
+            "run_task": f"{card_url}/run",
             "health": f"{card_url}/health",
         },
         "capabilities": ["comtrade-bench"],
     }
 
+    @app.get("/")
+    async def root():
+        return {"status": "ok"}
+
     @app.get("/health")
     async def health():
-        return {"ok": True}
+        return {"status": "ok"}
 
     @app.get("/healthz")
     async def healthz():
-        return {"ok": True}
+        return {"status": "ok"}
+
+    @app.get("/agent-card")
+    async def agent_card_simple():
+        return JSONResponse(content=AGENT_CARD)
 
     @app.get("/.well-known/agent-card.json")
     async def agent_card():
@@ -150,8 +160,10 @@ def main() -> int:
     
     # Detect server mode
     if args.host is not None:
-        card_url = args.card_url or f"http://localhost:{args.port}"
-        run_server(args.host, args.port, card_url)
+        # Use env PORT if set, otherwise args.port
+        port = int(os.getenv("PORT", str(args.port)))
+        card_url = args.card_url or f"http://localhost:{port}"
+        run_server(args.host, port, card_url)
         return 0
     
     # Local mode
