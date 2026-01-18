@@ -2,17 +2,107 @@
 Baseline Purple Agent - CLI Entrypoint
 
 Usage:
-    python3 run.py --task-id T1_single_page
-    python3 run.py --task-id T7_totals_trap --mock-url http://localhost:8000
+    Server mode (AgentBeats runner):
+        python3 run.py --host 0.0.0.0 --port 9009 --card-url http://purple-agent:9009
+
+    Local mode (run single task):
+        python3 run.py --task-id T1_single_page
+        python3 run.py --task-id T7_totals_trap --mock-url http://localhost:8000
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
-from purple_agent import PurpleAgent
+# Server mode imports (lazy)
+def run_server(host: str, port: int, card_url: str) -> None:
+    """Start FastAPI server for AgentBeats runner."""
+    from fastapi import FastAPI, Request
+    from fastapi.responses import JSONResponse
+    import uvicorn
+
+    app = FastAPI(title="Purple Comtrade Baseline v2")
+
+    AGENT_CARD = {
+        "name": "purple-comtrade-baseline-v2",
+        "description": "Baseline Purple agent for Green Comtrade Bench v2",
+        "version": "2.0.0",
+        "protocol": "a2a",
+        "endpoints": {
+            "run": f"{card_url}/run",
+            "health": f"{card_url}/health",
+        },
+        "capabilities": ["comtrade-bench"],
+    }
+
+    @app.get("/health")
+    async def health():
+        return {"ok": True}
+
+    @app.get("/healthz")
+    async def healthz():
+        return {"ok": True}
+
+    @app.get("/.well-known/agent-card.json")
+    async def agent_card():
+        return JSONResponse(content=AGENT_CARD)
+
+    @app.post("/run")
+    async def run_task(request: Request):
+        """Handle task run request from AgentBeats runner."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        
+        task_id = body.get("task_id", "unknown")
+        return {
+            "ok": True,
+            "message": "purple agent server up",
+            "task_id": task_id,
+            "agent": "purple-comtrade-baseline-v2",
+        }
+
+    @app.post("/a2a/rpc")
+    async def a2a_rpc(request: Request):
+        """Handle A2A JSON-RPC requests."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        
+        method = body.get("method", "")
+        rpc_id = body.get("id", "1")
+        
+        return {
+            "jsonrpc": "2.0",
+            "id": rpc_id,
+            "result": {
+                "ok": True,
+                "message": "purple agent a2a endpoint",
+                "method": method,
+            }
+        }
+
+    print(f"Starting purple agent server on {host}:{port}")
+    print(f"Agent card URL: {card_url}")
+    uvicorn.run(app, host=host, port=port)
+
+
+def run_local(task_id: str, output_dir: str, mock_url: str) -> int:
+    """Run single task locally and exit."""
+    from purple_agent import PurpleAgent
+
+    agent = PurpleAgent()
+    success = agent.run(
+        task_id=task_id,
+        output_dir=output_dir,
+        mock_url=mock_url,
+    )
+    return 0 if success else 1
 
 
 def main() -> int:
@@ -21,18 +111,35 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     
+    # Server mode args
+    parser.add_argument(
+        "--host",
+        default=None,
+        help="Server host (enables server mode)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=9009,
+        help="Server port (default: 9009)",
+    )
+    parser.add_argument(
+        "--card-url",
+        default=None,
+        help="Agent card base URL for endpoint discovery",
+    )
+    
+    # Local mode args
     parser.add_argument(
         "--task-id",
         default="T1_single_page",
         help="Task ID to run (default: T1_single_page)",
     )
-    
     parser.add_argument(
         "--output-dir",
         default=None,
         help="Output directory (default: _purple_output/<task_id>/)",
     )
-    
     parser.add_argument(
         "--mock-url",
         default="http://localhost:8000",
@@ -41,19 +148,17 @@ def main() -> int:
     
     args = parser.parse_args()
     
-    # Set default output directory
+    # Detect server mode
+    if args.host is not None:
+        card_url = args.card_url or f"http://localhost:{args.port}"
+        run_server(args.host, args.port, card_url)
+        return 0
+    
+    # Local mode
     if args.output_dir is None:
         args.output_dir = f"_purple_output/{args.task_id}"
     
-    # Run agent
-    agent = PurpleAgent()
-    success = agent.run(
-        task_id=args.task_id,
-        output_dir=args.output_dir,
-        mock_url=args.mock_url,
-    )
-    
-    return 0 if success else 1
+    return run_local(args.task_id, args.output_dir, args.mock_url)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install dependencies
-RUN pip install --no-cache-dir requests
+RUN pip install --no-cache-dir requests fastapi uvicorn pydantic
 
 # Copy application code
 COPY *.py ./
@@ -16,6 +16,9 @@ ENV MOCK_URL=http://mock-comtrade:8000
 ENV TASK_ID=T1_single_page
 ENV OUTPUT_DIR=/workspace/purple_output
 
-# Entrypoint: run the purple agent
+# Expose server port
+EXPOSE 9009
+
+# Entrypoint: run the purple agent (args passed through from runner)
 ENTRYPOINT ["python3", "run.py"]
-CMD ["--task-id", "T1_single_page", "--mock-url", "http://mock-comtrade:8000"]
+CMD []
