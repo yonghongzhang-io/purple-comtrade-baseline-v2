@@ -33,9 +33,9 @@ def run_server(host: str, port: int, card_url: str) -> None:
         "version": "2.0.0",
         "protocol": "a2a",
         "endpoints": {
-            "run": f"{card_url}/run",
-            "run_task": f"{card_url}/run",
-            "health": f"{card_url}/health",
+            "run": "/run",
+            "run_task": "/run",
+            "health": "/health",
         },
         "capabilities": ["comtrade-bench"],
     }
