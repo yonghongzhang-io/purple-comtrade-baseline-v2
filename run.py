@@ -94,18 +94,25 @@ def run_server(host: str, port: int, card_url: str) -> None:
         from purple_agent import PurpleAgent
         import asyncio
         from concurrent.futures import ThreadPoolExecutor
+        import traceback
 
+        print("[Purple RPC] Handler invoked")
         try:
             body = await request.json()
-            print(f"[Purple RPC] Received request: {json.dumps(body, indent=2)}")
+            print(f"[Purple RPC] Received request body (first 500 chars): {json.dumps(body)[:500]}")
         except Exception as e:
             print(f"[Purple RPC] Failed to parse JSON: {e}")
-            body = {}
+            print(traceback.format_exc())
+            return JSONResponse(content={
+                "jsonrpc": "2.0",
+                "id": "1",
+                "error": {"code": -32700, "message": "Parse error"}
+            })
 
         method = body.get("method", "")
         rpc_id = body.get("id", "1")
         params = body.get("params", {})
-        print(f"[Purple RPC] method={method}, params keys={list(params.keys())}")
+        print(f"[Purple RPC] method={method}, rpc_id={rpc_id}, params keys={list(params.keys())}")
 
         # Handle tasks/send method for task execution
         if method == "tasks/send":
@@ -129,14 +136,14 @@ def run_server(host: str, port: int, card_url: str) -> None:
 
             if not task_request or "task_id" not in task_request:
                 print(f"[Purple RPC] ERROR: task_id not found in request")
-                return {
+                return JSONResponse(content={
                     "jsonrpc": "2.0",
                     "id": rpc_id,
                     "error": {
                         "code": -32602,
                         "message": "Invalid params: task_id not found"
                     }
-                }
+                })
 
             task_id = task_request["task_id"]
             mock_url = task_request.get("mock_url", "http://mock-comtrade:8000")
@@ -155,7 +162,7 @@ def run_server(host: str, port: int, card_url: str) -> None:
                 )
 
             if success:
-                return {
+                return JSONResponse(content={
                     "jsonrpc": "2.0",
                     "id": rpc_id,
                     "result": {
@@ -189,19 +196,20 @@ def run_server(host: str, port: int, card_url: str) -> None:
                             ]
                         }
                     }
-                }
+                })
             else:
-                return {
+                return JSONResponse(content={
                     "jsonrpc": "2.0",
                     "id": rpc_id,
                     "error": {
                         "code": -32603,
                         "message": f"Task {task_id} execution failed"
                     }
-                }
+                })
 
         # Default response for other methods
-        return {
+        print(f"[Purple RPC] Returning default response for method: {method}")
+        return JSONResponse(content={
             "jsonrpc": "2.0",
             "id": rpc_id,
             "result": {
@@ -209,7 +217,7 @@ def run_server(host: str, port: int, card_url: str) -> None:
                 "message": "purple agent a2a endpoint",
                 "method": method,
             }
-        }
+        })
 
     print(f"Starting purple agent server on {host}:{port}")
     print(f"Agent card URL: {card_url}")
