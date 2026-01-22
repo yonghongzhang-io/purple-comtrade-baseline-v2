@@ -91,14 +91,107 @@ def run_server(host: str, port: int, card_url: str) -> None:
     @app.post("/a2a/rpc")
     async def a2a_rpc(request: Request):
         """Handle A2A JSON-RPC requests."""
+        from purple_agent import PurpleAgent
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
+
         try:
             body = await request.json()
         except Exception:
             body = {}
-        
+
         method = body.get("method", "")
         rpc_id = body.get("id", "1")
-        
+        params = body.get("params", {})
+
+        # Handle tasks/send method for task execution
+        if method == "tasks/send":
+            message = params.get("message", {})
+            parts = message.get("parts", [])
+
+            # Extract task_id from message
+            task_request = None
+            for part in parts:
+                if isinstance(part, dict) and part.get("kind") == "text":
+                    try:
+                        task_request = json.loads(part.get("text", "{}"))
+                        break
+                    except Exception:
+                        pass
+
+            if not task_request or "task_id" not in task_request:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": rpc_id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: task_id not found"
+                    }
+                }
+
+            task_id = task_request["task_id"]
+            mock_url = task_request.get("mock_url", "http://mock-comtrade:8000")
+            output_dir = task_request.get("output_dir", f"/workspace/purple_output/{task_id}")
+
+            # Run task in background thread
+            agent = PurpleAgent()
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor() as executor:
+                success = await loop.run_in_executor(
+                    executor,
+                    agent.run,
+                    task_id,
+                    output_dir,
+                    mock_url
+                )
+
+            if success:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": rpc_id,
+                    "result": {
+                        "task": {
+                            "id": f"task-{task_id}",
+                            "status": {
+                                "state": "completed",
+                                "message": {
+                                    "parts": [
+                                        {
+                                            "kind": "text",
+                                            "text": f"Task {task_id} completed successfully"
+                                        }
+                                    ]
+                                }
+                            },
+                            "artifacts": [
+                                {
+                                    "name": "result",
+                                    "parts": [
+                                        {
+                                            "kind": "text",
+                                            "text": json.dumps({
+                                                "task_id": task_id,
+                                                "status": "completed",
+                                                "output_dir": output_dir
+                                            })
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            else:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": rpc_id,
+                    "error": {
+                        "code": -32603,
+                        "message": f"Task {task_id} execution failed"
+                    }
+                }
+
+        # Default response for other methods
         return {
             "jsonrpc": "2.0",
             "id": rpc_id,
