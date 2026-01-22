@@ -31,7 +31,7 @@ def run_server(host: str, port: int, card_url: str) -> None:
         "name": "purple-comtrade-baseline-v2",
         "description": "Baseline Purple agent for Green Comtrade Bench v2",
         "version": "2.0.0",
-        "url": "http://purple-comtrade-baseline-v2:9009",
+        "url": "http://purple-comtrade-baseline-v2:9009/a2a/rpc",
         "endpoints": {
             "rpc": "/a2a/rpc",
             "health": "/healthz",
