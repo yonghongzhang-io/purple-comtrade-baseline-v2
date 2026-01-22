@@ -94,15 +94,19 @@ def run_server(host: str, port: int, card_url: str) -> None:
         from purple_agent import PurpleAgent
         import asyncio
         from concurrent.futures import ThreadPoolExecutor
-        import traceback
+        import logging
+        import sys
 
-        print("[Purple RPC] Handler invoked")
+        # Configure logging to stdout
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO, force=True)
+        logger = logging.getLogger("purple_rpc")
+
+        logger.info("Handler invoked")
         try:
             body = await request.json()
-            print(f"[Purple RPC] Received request body (first 500 chars): {json.dumps(body)[:500]}")
+            logger.info(f"Received request: method={body.get('method')}, id={body.get('id')}")
         except Exception as e:
-            print(f"[Purple RPC] Failed to parse JSON: {e}")
-            print(traceback.format_exc())
+            logger.error(f"Failed to parse JSON: {e}")
             return JSONResponse(content={
                 "jsonrpc": "2.0",
                 "id": "1",
@@ -112,30 +116,30 @@ def run_server(host: str, port: int, card_url: str) -> None:
         method = body.get("method", "")
         rpc_id = body.get("id", "1")
         params = body.get("params", {})
-        print(f"[Purple RPC] method={method}, rpc_id={rpc_id}, params keys={list(params.keys())}")
+        logger.info(f"method={method}, rpc_id={rpc_id}")
 
         # Handle tasks/send method for task execution
         if method == "tasks/send":
             message = params.get("message", {})
             parts = message.get("parts", [])
-            print(f"[Purple RPC] message keys={list(message.keys())}")
-            print(f"[Purple RPC] parts={json.dumps(parts, indent=2)}")
+            logger.info(f"message keys={list(message.keys())}")
+            logger.info(f"parts count={len(parts)}")
 
             # Extract task_id from message
             task_request = None
-            for part in parts:
-                print(f"[Purple RPC] Processing part: {json.dumps(part, indent=2)}")
+            for i, part in enumerate(parts):
+                logger.info(f"Processing part {i}: keys={list(part.keys()) if isinstance(part, dict) else 'not a dict'}")
                 if isinstance(part, dict) and part.get("kind") == "text":
                     try:
                         task_request = json.loads(part.get("text", "{}"))
-                        print(f"[Purple RPC] Extracted task_request: {task_request}")
+                        logger.info(f"Extracted task_request: {task_request}")
                         break
                     except Exception as e:
-                        print(f"[Purple RPC] Failed to parse text as JSON: {e}")
+                        logger.error(f"Failed to parse text as JSON: {e}")
                         pass
 
             if not task_request or "task_id" not in task_request:
-                print(f"[Purple RPC] ERROR: task_id not found in request")
+                logger.error(f"task_id not found in request")
                 return JSONResponse(content={
                     "jsonrpc": "2.0",
                     "id": rpc_id,
@@ -208,7 +212,7 @@ def run_server(host: str, port: int, card_url: str) -> None:
                 })
 
         # Default response for other methods
-        print(f"[Purple RPC] Returning default response for method: {method}")
+        logger.info(f"Returning default response for method: {method}")
         return JSONResponse(content={
             "jsonrpc": "2.0",
             "id": rpc_id,
