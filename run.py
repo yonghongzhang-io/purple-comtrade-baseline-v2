@@ -97,29 +97,38 @@ def run_server(host: str, port: int, card_url: str) -> None:
 
         try:
             body = await request.json()
-        except Exception:
+            print(f"[Purple RPC] Received request: {json.dumps(body, indent=2)}")
+        except Exception as e:
+            print(f"[Purple RPC] Failed to parse JSON: {e}")
             body = {}
 
         method = body.get("method", "")
         rpc_id = body.get("id", "1")
         params = body.get("params", {})
+        print(f"[Purple RPC] method={method}, params keys={list(params.keys())}")
 
         # Handle tasks/send method for task execution
         if method == "tasks/send":
             message = params.get("message", {})
             parts = message.get("parts", [])
+            print(f"[Purple RPC] message keys={list(message.keys())}")
+            print(f"[Purple RPC] parts={json.dumps(parts, indent=2)}")
 
             # Extract task_id from message
             task_request = None
             for part in parts:
+                print(f"[Purple RPC] Processing part: {json.dumps(part, indent=2)}")
                 if isinstance(part, dict) and part.get("kind") == "text":
                     try:
                         task_request = json.loads(part.get("text", "{}"))
+                        print(f"[Purple RPC] Extracted task_request: {task_request}")
                         break
-                    except Exception:
+                    except Exception as e:
+                        print(f"[Purple RPC] Failed to parse text as JSON: {e}")
                         pass
 
             if not task_request or "task_id" not in task_request:
+                print(f"[Purple RPC] ERROR: task_id not found in request")
                 return {
                     "jsonrpc": "2.0",
                     "id": rpc_id,
