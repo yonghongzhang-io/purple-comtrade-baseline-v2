@@ -5,6 +5,8 @@ Usage:
     python run_a2a.py --host 0.0.0.0 --port 9009 --card-url http://purple-agent:9009
 """
 
+print("[STARTUP] Importing modules...", flush=True)
+
 import argparse
 import asyncio
 import concurrent.futures
@@ -188,4 +190,11 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        print("Starting purple agent A2A server...", flush=True)
+        asyncio.run(main())
+    except Exception as e:
+        print(f"FATAL ERROR: {e}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
