@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-RUN pip install --no-cache-dir requests fastapi uvicorn pydantic
+RUN pip install --no-cache-dir requests fastapi uvicorn pydantic a2a-server
 
 # Copy application code
 COPY *.py ./
@@ -22,6 +22,6 @@ ENV OUTPUT_DIR=/workspace/purple_output
 # Expose server port
 EXPOSE 9009
 
-# Entrypoint: run the purple agent (args passed through from runner)
-ENTRYPOINT ["python3", "run.py"]
+# Entrypoint: run the purple agent with A2A Server SDK (args passed through from runner)
+ENTRYPOINT ["python3", "run_a2a.py"]
 CMD []
