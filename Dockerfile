@@ -28,5 +28,5 @@ ENV OUTPUT_DIR=/workspace/purple_output
 EXPOSE 9009
 
 # Entrypoint: run the purple agent with A2A Server SDK (args passed through from runner)
-ENTRYPOINT ["/bin/sh", "/app/start.sh"]
-CMD []
+# Using CMD instead of ENTRYPOINT to allow compose to override the command
+CMD ["python", "/app/run_a2a.py", "--host", "0.0.0.0", "--port", "9009"]
