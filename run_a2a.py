@@ -5,6 +5,10 @@ Usage:
     python run_a2a.py --host 0.0.0.0 --port 9009 --card-url http://purple-agent:9009
 """
 
+import sys
+sys.stderr.write("[STARTUP] Starting run_a2a.py...\n")
+sys.stderr.flush()
+
 print("[STARTUP] Importing modules...", flush=True)
 
 import argparse
@@ -28,8 +32,6 @@ from a2a.types import AgentCard, AgentSkill, AgentCapabilities, TaskState
 from a2a.utils import new_agent_text_message, new_task
 from a2a.utils.errors import ServerError
 from a2a.types import InvalidParamsError
-
-from purple_agent import PurpleAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -89,6 +91,7 @@ class PurpleExecutor(AgentExecutor):
 
         # Run task in background thread
         try:
+            from purple_agent import PurpleAgent
             agent = PurpleAgent()
             loop = asyncio.get_event_loop()
 
