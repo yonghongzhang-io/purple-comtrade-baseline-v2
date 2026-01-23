@@ -29,6 +29,6 @@ EXPOSE 9009
 
 # Entrypoint: run the purple agent with A2A Server SDK (args passed through from runner)
 # ENTRYPOINT receives args from docker-compose command field
-# Temporarily using test_imports.py to debug import issues
-ENTRYPOINT ["python", "/app/test_imports.py"]
+# Using minimal test script to debug container startup
+ENTRYPOINT ["python", "-u", "/app/simple_test.py"]
 CMD []
