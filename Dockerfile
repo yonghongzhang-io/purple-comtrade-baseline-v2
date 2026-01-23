@@ -5,8 +5,8 @@ WORKDIR /app
 # Install curl for healthchecks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip install --no-cache-dir requests fastapi uvicorn pydantic a2a-server
+# Install Python dependencies - use a2a-sdk (not a2a-server!)
+RUN pip install --no-cache-dir requests fastapi uvicorn pydantic httpx "a2a-sdk>=0.3.5" starlette "sse-starlette>=1.6.5"
 
 # Copy application code
 COPY *.py ./
@@ -29,6 +29,5 @@ EXPOSE 9009
 
 # Entrypoint: run the purple agent with A2A Server SDK (args passed through from runner)
 # ENTRYPOINT receives args from docker-compose command field
-# Using A2A debug script to test imports while providing healthcheck endpoint
-ENTRYPOINT ["python", "-u", "/app/debug_a2a.py"]
+ENTRYPOINT ["python", "-u", "/app/run_a2a.py"]
 CMD []
