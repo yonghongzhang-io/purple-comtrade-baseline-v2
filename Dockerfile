@@ -16,6 +16,9 @@ RUN chmod +x start.sh
 # Create output directory
 RUN mkdir -p /workspace/purple_output
 
+# Test if the Python script can be imported (will fail build if there's a syntax error)
+RUN python -m py_compile run_a2a.py && echo "Python syntax check passed"
+
 # Default environment variables
 ENV MOCK_URL=http://mock-comtrade:8000
 ENV TASK_ID=T1_single_page
@@ -25,5 +28,5 @@ ENV OUTPUT_DIR=/workspace/purple_output
 EXPOSE 9009
 
 # Entrypoint: run the purple agent with A2A Server SDK (args passed through from runner)
-ENTRYPOINT ["/app/start.sh"]
+ENTRYPOINT ["/bin/bash", "/app/start.sh"]
 CMD []
