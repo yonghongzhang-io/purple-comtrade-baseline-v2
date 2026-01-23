@@ -10,6 +10,8 @@ RUN pip install --no-cache-dir requests fastapi uvicorn pydantic a2a-server
 
 # Copy application code
 COPY *.py ./
+COPY start.sh ./
+RUN chmod +x start.sh
 
 # Create output directory
 RUN mkdir -p /workspace/purple_output
@@ -23,5 +25,5 @@ ENV OUTPUT_DIR=/workspace/purple_output
 EXPOSE 9009
 
 # Entrypoint: run the purple agent with A2A Server SDK (args passed through from runner)
-ENTRYPOINT ["python3", "run_a2a.py"]
+ENTRYPOINT ["/app/start.sh"]
 CMD []
