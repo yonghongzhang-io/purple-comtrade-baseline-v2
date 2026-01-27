@@ -27,6 +27,10 @@ class PurpleAgent:
     def __init__(self):
         self.session = requests.Session()
         self.log_lines: List[str] = []
+        # Efficiency tracking
+        self.request_count = 0
+        self.retry_count = 0
+        self.start_time = 0.0
 
     def _log(self, message: str) -> None:
         """Add message to run log."""
@@ -86,6 +90,7 @@ class PurpleAgent:
     ) -> Optional[Dict[str, Any]]:
         """Fetch with exponential backoff on 429/500."""
         for attempt in range(max_retries + 1):
+            self.request_count += 1  # Track request count
             try:
                 resp = self.session.get(url, params=params, timeout=10)
                 
@@ -94,18 +99,20 @@ class PurpleAgent:
                 
                 if resp.status_code in {429, 500}:
                     if attempt < max_retries:
+                        self.retry_count += 1  # Track retry count
                         backoff = 2 ** attempt  # Deterministic: 1s, 2s, 4s
-                        self._log(f"WARN: HTTP {resp.status_code} received, retry after {backoff}s (attempt {attempt + 1}/{max_retries})")
+                        self._log(f"WARN: HTTP {resp.status_code} received, exponential backoff retry after {backoff}s (attempt {attempt + 1}/{max_retries})")
                         time.sleep(backoff)
                         continue
                     else:
-                        self._log(f"ERROR: HTTP {resp.status_code} after {max_retries} retries")
+                        self._log(f"ERROR: HTTP {resp.status_code} after max {max_retries} retries limit reached")
                         return None
                 
                 resp.raise_for_status()
             except requests.RequestException as e:
                 self._log(f"ERROR: Request failed: {e}")
                 if attempt < max_retries:
+                    self.retry_count += 1
                     backoff = 2 ** attempt
                     self._log(f"WARN: Retrying after {backoff}s")
                     time.sleep(backoff)
@@ -254,9 +261,11 @@ class PurpleAgent:
                 "pages_fetched": "varies",
                 "stop_reason": "complete",
             },
+            "request_count": self.request_count,
+            "execution_time_seconds": round(time.time() - self.start_time, 2),
             "request_stats": {
-                "requests_total": "varies",
-                "retries_total": "varies",
+                "requests_total": self.request_count,
+                "retries_total": self.retry_count,
                 "http_429": 0,
                 "http_500": 0,
             },
@@ -292,6 +301,11 @@ class PurpleAgent:
         mock_url: str = "http://localhost:8000",
     ) -> bool:
         """Run Purple agent for a single task."""
+        # Reset efficiency counters
+        self.request_count = 0
+        self.retry_count = 0
+        self.start_time = time.time()
+        
         self._log(f"INFO: Starting baseline purple agent for task {task_id}")
         
         # Wait for services to be ready
