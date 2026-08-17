@@ -1,5 +1,7 @@
 # Purple Comtrade Baseline v2
 
+> **Supporting repository for ComtradeBench.** For the current flagship 10-task OpenEnv benchmark, cross-model evaluation, and training results, see **[comtrade-openenv](https://github.com/yonghongzhang-io/comtrade-openenv)**.
+
 Baseline Purple agent for [Green Comtrade Bench v2](https://github.com/yonghongzhang-io/green-comtrade-bench-v2).
 
 This is a minimal, deterministic Purple agent implementation that validates the evaluation contract without requiring an LLM.
@@ -103,8 +105,9 @@ done
 
 ## Related
 
-- [Green Comtrade Bench v2](https://github.com/yonghongzhang-io/green-comtrade-bench-v2) - The evaluation benchmark
-- [AgentBeats Leaderboard v2](https://github.com/yonghongzhang-io/agentbeats-leaderboard-v2) - Submission tracking
+- **[ComtradeBench / OpenEnv](https://github.com/yonghongzhang-io/comtrade-openenv)** — current flagship benchmark and research repository
+- [Green Comtrade Bench v2](https://github.com/yonghongzhang-io/green-comtrade-bench-v2) — deterministic evaluation benchmark
+- [AgentBeats Leaderboard v2](https://github.com/yonghongzhang-io/agentbeats-leaderboard-v2) — competition infrastructure and submission tracking
 
 ## License
 
